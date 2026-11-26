@@ -1,0 +1,14 @@
+name = "wandercraft-backend"
+main = "worker.js"
+compatibility_date = "2026-01-01"
+
+[vars]
+GEMINI_MODEL = "gemini-3.1-flash-lite"
+# Restrict to your GitHub Pages origin once live, e.g. "https://your-username.github.io"
+ALLOWED_ORIGIN = "*"
+
+# 1. Create a KV namespace with: npx wrangler kv namespace create WANDERCRAFT_SAVES
+# 2. Paste the resulting id below and uncomment:
+# [[kv_namespaces]]
+# binding = "WANDERCRAFT_SAVES"
+# id = "YOUR_KV_NAMESPACE_ID"
