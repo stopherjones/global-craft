@@ -1,0 +1,1370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WanderCraft — Generative Travel & Lateral Alchemy</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            serif: ['Fraunces', 'Georgia', 'serif'],
+          },
+          colors: {
+            linen: {
+              50: '#FCFBF8',
+              100: '#F7F3EB',
+              200: '#ECE4D5',
+              300: '#DDD0BA',
+            },
+            espresso: {
+              700: '#574738',
+              800: '#382C21',
+              900: '#241C15',
+            },
+            terracotta: {
+              500: '#C85A32',
+              600: '#B04A25',
+              700: '#913B1C',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    @keyframes fadeSlideUp {
+      from { opacity: 0; transform: translateY(6px) scale(0.98); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    .animate-entry {
+      animation: fadeSlideUp 0.24s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+    @keyframes spinSlow {
+      to { transform: rotate(360deg); }
+    }
+    .spinner {
+      border: 2.5px solid rgba(200, 90, 50, 0.2);
+      border-top-color: #C85A32;
+      border-radius: 9999px;
+      width: 22px;
+      height: 22px;
+      animation: spinSlow 0.7s linear infinite;
+    }
+    .spinner-light {
+      border: 2px solid rgba(255, 255, 255, 0.25);
+      border-top-color: #FFFFFF;
+      border-radius: 9999px;
+      width: 16px;
+      height: 16px;
+      animation: spinSlow 0.7s linear infinite;
+    }
+  </style>
+</head>
+<body class="bg-linen-100 text-espresso-900 min-h-screen flex flex-col antialiased selection:bg-amber-200/70">
+
+  <!-- Top Navigation Header -->
+  <header class="bg-espresso-900 text-linen-50 border-b border-espresso-800 sticky top-0 z-30 shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3.5 flex flex-wrap items-center justify-between gap-3">
+      <!-- Brand -->
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-terracotta-500 flex items-center justify-center text-xl shadow-inner shrink-0">
+          🧭
+        </div>
+        <div>
+          <h1 class="font-serif text-xl sm:text-2xl font-bold tracking-tight text-linen-50 leading-none">
+            WanderCraft
+          </h1>
+          <p class="text-xs text-linen-300 mt-1">Travel Scavenging &amp; Lateral Word Alchemy</p>
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="flex items-center gap-2.5">
+        <button id="btn-open-grimoire" type="button"
+          class="px-3.5 py-2 rounded-xl bg-espresso-800 hover:bg-espresso-700 text-linen-50 text-xs sm:text-sm font-semibold border border-espresso-700 transition flex items-center gap-2 cursor-pointer">
+          <span>📖</span>
+          <span>Explorer's Grimoire</span>
+          <span id="grimoire-recipe-count" class="px-2 py-0.5 rounded-full bg-amber-600 text-white text-[11px] font-bold">0</span>
+        </button>
+
+        <button id="btn-open-reset" type="button"
+          class="px-3 py-2 rounded-xl bg-red-950/70 hover:bg-red-900 text-red-200 text-xs font-medium border border-red-800/50 transition cursor-pointer"
+          title="Clear saved locations, satchel, and recipes">
+          Reset
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Floating Notification Container -->
+  <div id="toast-container" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none px-4 sm:px-0"></div>
+
+  <!-- Main Workspace -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+
+    <!-- LEFT COLUMN: Destination Picker & Scavenging Area (7 cols) -->
+    <section class="lg:col-span-7 flex flex-col gap-5">
+
+      <!-- Travel & Destination Picker Card -->
+      <div class="bg-linen-50 rounded-2xl border border-linen-300 shadow-xs p-5">
+        <div class="flex items-center justify-between mb-3">
+          <h2 class="font-serif text-lg font-bold text-espresso-900 flex items-center gap-2">
+            <span>✈️</span> Destination Compass
+          </h2>
+          <span class="text-xs text-espresso-700 font-medium">8-Slot Travel Satchel Prototype</span>
+        </div>
+
+        <!-- Custom City/Town Input -->
+        <form id="travel-form" class="flex flex-col sm:flex-row gap-2.5 mb-4">
+          <input
+            id="travel-input"
+            type="text"
+            placeholder="Enter any town, city, or landmark (e.g. Venice, Edinburgh, Oaxaca)..."
+            class="flex-1 px-4 py-2.5 rounded-xl bg-white border border-linen-300 text-sm text-espresso-900 placeholder:text-espresso-700/50 focus:outline-none focus:ring-2 focus:ring-terracotta-500 focus:border-terracotta-500 transition"
+            autocomplete="off"
+          />
+          <button
+            id="btn-travel-submit"
+            type="submit"
+            class="px-5 py-2.5 rounded-xl bg-terracotta-500 hover:bg-terracotta-600 disabled:opacity-50 text-white font-semibold text-sm shadow-xs transition flex items-center justify-center gap-2 cursor-pointer whitespace-nowrap">
+            <span>Travel</span>
+            <span>→</span>
+          </button>
+        </form>
+
+        <!-- Quick-Hop Destination Chips -->
+        <div>
+          <p class="text-[11px] font-bold uppercase tracking-wider text-espresso-700/75 mb-2">
+            Quick-Hop Destinations
+          </p>
+          <div id="quick-hop-chips" class="flex flex-wrap gap-2"></div>
+        </div>
+      </div>
+
+      <!-- Local Scavenging Panel -->
+      <div class="bg-linen-50 rounded-2xl border border-linen-300 shadow-xs p-5 min-h-[340px] flex flex-col">
+        <div class="flex flex-wrap items-center justify-between gap-3 pb-3.5 mb-4 border-b border-linen-200">
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="text-[11px] font-bold uppercase tracking-wider text-terracotta-600">Current Stop</span>
+              <span id="location-status-pill" class="hidden text-[11px] font-semibold px-2.5 py-0.5 rounded-full"></span>
+            </div>
+            <h3 id="current-city-heading" class="font-serif text-2xl font-bold text-espresso-900 mt-0.5">
+              Select a Destination
+            </h3>
+          </div>
+
+          <button id="btn-rescout" type="button"
+            class="hidden px-3 py-1.5 rounded-xl bg-linen-100 hover:bg-linen-200 border border-linen-300 text-xs font-semibold text-espresso-800 transition flex items-center gap-1.5 cursor-pointer"
+            title="Regenerate 4 new elemental nouns for this location">
+            <span>↻</span>
+            <span>Rescout</span>
+          </button>
+        </div>
+
+        <!-- Scavenged Items Grid / Loading / Empty State -->
+        <div id="scavenge-panel-body" class="flex-1 flex flex-col justify-center">
+          <div class="text-center py-10 px-4 text-espresso-700">
+            <div class="text-4xl mb-2.5">🗺️</div>
+            <p class="font-semibold text-sm text-espresso-900">Your journey begins anywhere</p>
+            <p class="text-xs mt-1 max-w-md mx-auto leading-relaxed">
+              Tap one of the Quick-Hop Destinations above or type any city to uncover 4 iconic local elements to pack into your satchel.
+            </p>
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- RIGHT COLUMN: 8-Slot Travel Satchel & Crafting Bench (5 cols) -->
+    <aside class="lg:col-span-5 flex flex-col gap-5">
+
+      <!-- 8-Slot Travel Satchel -->
+      <div class="bg-linen-50 rounded-2xl border border-linen-300 shadow-xs p-5">
+        <div class="flex items-center justify-between mb-3">
+          <div>
+            <h2 class="font-serif text-lg font-bold text-espresso-900 flex items-center gap-2">
+              <span>🎒</span> Travel Satchel
+            </h2>
+            <p class="text-xs text-espresso-700">Tap an item to place it onto the Crafting Bench</p>
+          </div>
+          <span id="satchel-capacity-badge" class="text-xs font-bold px-2.5 py-1 rounded-xl bg-linen-200 text-espresso-900">
+            0 / 8
+          </span>
+        </div>
+
+        <div id="satchel-slots-grid" class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-2 gap-2.5"></div>
+      </div>
+
+      <!-- Lateral Crafting Bench -->
+      <div class="bg-espresso-900 text-linen-50 rounded-2xl border border-espresso-800 shadow-md p-5">
+        <div class="flex items-center justify-between mb-1">
+          <h2 class="font-serif text-lg font-bold text-linen-50 flex items-center gap-2">
+            <span>⚗️</span> Lateral Crafting Bench
+          </h2>
+          <button id="btn-clear-slots" type="button"
+            class="text-xs text-linen-300 hover:text-white underline underline-offset-2 cursor-pointer">
+            Clear Slots
+          </button>
+        </div>
+        <p class="text-xs text-linen-300 mb-4">
+          Combine two items from different places for a surprising real-world concept
+        </p>
+
+        <!-- Slot A + Slot B -->
+        <div class="grid grid-cols-11 gap-2 items-center mb-4">
+          <button id="bench-slot-a" type="button"
+            class="col-span-5 h-24 rounded-xl border-2 border-dashed border-espresso-700 bg-espresso-800/70 hover:border-amber-500 transition flex flex-col items-center justify-center p-2 text-center cursor-pointer">
+            <span class="text-xs font-semibold text-linen-300">Slot A</span>
+            <span class="text-[11px] text-linen-300/60 mt-0.5">Tap satchel item</span>
+          </button>
+
+          <div class="col-span-1 text-center font-serif text-2xl font-bold text-amber-500">+</div>
+
+          <button id="bench-slot-b" type="button"
+            class="col-span-5 h-24 rounded-xl border-2 border-dashed border-espresso-700 bg-espresso-800/70 hover:border-amber-500 transition flex flex-col items-center justify-center p-2 text-center cursor-pointer">
+            <span class="text-xs font-semibold text-linen-300">Slot B</span>
+            <span class="text-[11px] text-linen-300/60 mt-0.5">Tap satchel item</span>
+          </button>
+        </div>
+
+        <!-- Combine Button -->
+        <button id="btn-combine" type="button" disabled
+          class="w-full py-3 px-4 rounded-xl bg-terracotta-500 hover:bg-terracotta-600 disabled:bg-espresso-800 disabled:text-linen-300/40 text-white font-bold text-sm shadow-xs transition flex items-center justify-center gap-2 cursor-pointer disabled:cursor-not-allowed">
+          <span>✨ Combine Elements</span>
+        </button>
+
+        <!-- Crafted Output Card -->
+        <div id="craft-result-container" class="hidden mt-4 pt-4 border-t border-espresso-800 animate-entry"></div>
+      </div>
+
+    </aside>
+  </main>
+
+  <!-- Explorer's Grimoire Modal -->
+  <div id="grimoire-modal" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="bg-linen-50 text-espresso-900 rounded-2xl border border-linen-300 max-w-2xl w-full max-h-[85vh] flex flex-col shadow-2xl overflow-hidden animate-entry">
+      <div class="px-6 py-4 bg-espresso-900 text-linen-50 flex items-center justify-between">
+        <div>
+          <h2 class="font-serif text-xl font-bold">📖 Explorer's Grimoire</h2>
+          <p class="text-xs text-linen-300">Saved discoveries and visited towns in localStorage</p>
+        </div>
+        <button id="btn-close-grimoire" type="button"
+          class="w-8 h-8 rounded-xl bg-espresso-800 hover:bg-espresso-700 text-linen-100 flex items-center justify-center cursor-pointer">
+          ✕
+        </button>
+      </div>
+
+      <!-- Tabs -->
+      <div class="flex border-b border-linen-200 bg-linen-100 px-6 pt-2.5 gap-6">
+        <button id="tab-grimoire-recipes" type="button"
+          class="pb-2.5 text-sm font-bold border-b-2 border-terracotta-500 text-terracotta-600 cursor-pointer">
+          Discovered Recipes
+        </button>
+        <button id="tab-grimoire-locations" type="button"
+          class="pb-2.5 text-sm font-medium border-b-2 border-transparent text-espresso-700 hover:text-espresso-900 cursor-pointer">
+          Charted Locations
+        </button>
+      </div>
+
+      <!-- Modal Content -->
+      <div id="grimoire-content" class="p-5 overflow-y-auto flex-1 space-y-3"></div>
+    </div>
+  </div>
+
+  <!-- Custom Reset Confirmation Modal -->
+  <div id="reset-modal" class="hidden fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
+    <div class="bg-linen-50 rounded-2xl border border-linen-300 max-w-sm w-full p-6 shadow-xl animate-entry">
+      <h3 class="font-serif text-lg font-bold text-espresso-900 mb-2">Reset Explorer Data?</h3>
+      <p class="text-sm text-espresso-700 mb-5 leading-relaxed">
+        This will erase your Travel Satchel, cached destinations, and discovered recipes from browser storage.
+      </p>
+      <div class="flex justify-end gap-2.5">
+        <button id="btn-cancel-reset" type="button"
+          class="px-4 py-2 rounded-xl bg-linen-200 hover:bg-linen-300 text-espresso-900 text-sm font-semibold cursor-pointer">
+          Cancel
+        </button>
+        <button id="btn-confirm-reset" type="button"
+          class="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white text-sm font-semibold cursor-pointer">
+          Reset Everything
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /**
+     * ============================================================================
+     * 1. CONSTANTS & CONFIGURATION
+     * ============================================================================
+     */
+    const WORKER_URL = "https://groq-proxy.chrisjones59.workers.dev/chat/completions";
+    const MODEL = "openai/gpt-oss-120b";
+    const STORAGE_KEY = "wandercraft_state_v3";
+    const MAX_SATCHEL_SIZE = 8;
+
+    const QUICK_HOP_CITIES = [
+      { name: "London", emoji: "🇬🇧" },
+      { name: "Tokyo", emoji: "🇯🇵" },
+      { name: "Paris", emoji: "🇫🇷" },
+      { name: "New York", emoji: "🗽" },
+      { name: "Marrakech", emoji: "🇲🇦" },
+      { name: "Reykjavik", emoji: "🇮🇸" },
+      { name: "Kyoto", emoji: "⛩️" },
+      { name: "Cairo", emoji: "🏺" }
+    ];
+
+    /**
+     * ============================================================================
+     * 2. MODULAR STORAGE ADAPTER (localStorage backed; easily swappable for KV/DB)
+     * ============================================================================
+     */
+    const StorageAdapter = {
+      _defaultState() {
+        return {
+          locations: {},
+          recipes: {},
+          inventory: [],
+          currentCity: null
+        };
+      },
+
+      _readState() {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          if (!raw) return this._defaultState();
+          const parsed = JSON.parse(raw);
+          return {
+            locations: parsed.locations || {},
+            recipes: parsed.recipes || {},
+            inventory: Array.isArray(parsed.inventory) ? parsed.inventory : [],
+            currentCity: parsed.currentCity || null
+          };
+        } catch (err) {
+          console.error("Failed to read StorageAdapter state:", err);
+          return this._defaultState();
+        }
+      },
+
+      _writeState(state) {
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        } catch (err) {
+          console.error("Failed to write StorageAdapter state:", err);
+        }
+      },
+
+      normalizeCityKey(city) {
+        return String(city || "").trim().toLowerCase().replace(/\s+/g, " ");
+      },
+
+      normalizeRecipeKey(itemA, itemB) {
+        return [String(itemA || "").trim().toLowerCase(), String(itemB || "").trim().toLowerCase()]
+          .sort()
+          .join("+");
+      },
+
+      async getLocation(city) {
+        const key = this.normalizeCityKey(city);
+        if (!key) return null;
+        const state = this._readState();
+        return state.locations[key] || null;
+      },
+
+      async saveLocation(city, data) {
+        const key = this.normalizeCityKey(city);
+        if (!key) return;
+        const state = this._readState();
+        state.locations[key] = data;
+        state.currentCity = data.displayName || city;
+        this._writeState(state);
+      },
+
+      async setCurrentCity(displayName) {
+        const state = this._readState();
+        state.currentCity = displayName;
+        this._writeState(state);
+      },
+
+      async getCurrentCity() {
+        return this._readState().currentCity;
+      },
+
+      async getRecipe(a, b) {
+        const key = this.normalizeRecipeKey(a, b);
+        const state = this._readState();
+        return state.recipes[key] || null;
+      },
+
+      async saveRecipe(a, b, recipe) {
+        const key = this.normalizeRecipeKey(a, b);
+        const state = this._readState();
+        state.recipes[key] = {
+          ...recipe,
+          ingredients: [a, b],
+          timestamp: Date.now()
+        };
+        this._writeState(state);
+        return state.recipes[key];
+      },
+
+      async getInventory() {
+        return this._readState().inventory;
+      },
+
+      async saveInventory(items) {
+        const state = this._readState();
+        state.inventory = items.slice(0, MAX_SATCHEL_SIZE);
+        this._writeState(state);
+        return state.inventory;
+      },
+
+      async getAllRecipes() {
+        const state = this._readState();
+        return Object.values(state.recipes).sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+      },
+
+      async getAllLocations() {
+        const state = this._readState();
+        return Object.values(state.locations);
+      },
+
+      async clearAll() {
+        localStorage.removeItem(STORAGE_KEY);
+      }
+    };
+
+    /**
+     * ============================================================================
+     * 3. AI SERVICE (Cloudflare Worker -> Groq openai/gpt-oss-120b)
+     * ============================================================================
+     */
+    const AIService = {
+      async callModel(systemPrompt, userPrompt, temperature = 0.85) {
+        const response = await fetch(WORKER_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            model: MODEL,
+            temperature,
+            messages: [
+              { role: "system", content: systemPrompt },
+              { role: "user", content: userPrompt }
+            ]
+          })
+        });
+
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data?.error?.message || `Worker HTTP ${response.status}`);
+        }
+
+        const rawText = data?.choices?.[0]?.message?.content;
+        if (!rawText) {
+          throw new Error("Empty response returned from model.");
+        }
+
+        return this.extractJSON(rawText);
+      },
+
+      extractJSON(text) {
+        // Strip markdown code fences if present
+        const cleaned = text.replace(/```json\s*/gi, "").replace(/```\s*/g, "").trim();
+        try {
+          return JSON.parse(cleaned);
+        } catch (_) {
+          const firstBrace = cleaned.indexOf("{");
+          const lastBrace = cleaned.lastIndexOf("}");
+          if (firstBrace !== -1 && lastBrace > firstBrace) {
+            return JSON.parse(cleaned.slice(firstBrace, lastBrace + 1));
+          }
+          throw new Error("Could not parse JSON from model output.");
+        }
+      },
+
+      /**
+       * Generate 4 iconic, standalone 1-to-2-word elemental nouns for a location.
+       */
+      async generateLocationElements(locationName, previousNames = []) {
+        const systemPrompt = `You are the world-scouting engine for WanderCraft, a travel crafting game.
+Given any town, city, or landmark, return 4 iconic, distinct, standalone 1-to-2-word NOUNS strongly associated with that place.
+
+STRICT RULES:
+1. Every item "name" MUST be a crisp, standalone 1-to-2-word noun (e.g., "Baguette", "Espresso", "Beret", "Gargoyle", "Red Bus", "Fog", "Tea", "Crown", "Neon", "Ramen", "Shinkansen", "Katana").
+2. NEVER use decorated or poetic phrases like "Cafe Lantern", "Eiffel Silhouette", "Foggy Lantern", or "Glowing Aurora". Strip adjectives unless part of an iconic proper noun (like "Red Bus" or "Tagine Pot").
+3. Give each item 1 fitting emoji and a punchy 4-to-7-word "hint" describing its local flavor.
+4. Return ONLY valid JSON matching this exact schema:
+{
+  "displayName": "Properly Capitalized City/Place Name",
+  "items": [
+    { "name": "Noun", "emoji": "🥖", "hint": "Crisp crust fresh from the boulangerie." }
+  ]
+}`;
+
+        const avoidClause = previousNames.length
+          ? `\nAvoid repeating these previous items: ${previousNames.join(", ")}. Pick fresh angles.`
+          : "";
+
+        const userPrompt = `Scout 4 iconic elemental nouns for: "${locationName}".${avoidClause}`;
+        const parsed = await this.callModel(systemPrompt, userPrompt, 0.85);
+
+        if (!parsed || !Array.isArray(parsed.items) || parsed.items.length === 0) {
+          throw new Error("Invalid location items format.");
+        }
+
+        return {
+          displayName: String(parsed.displayName || locationName).trim(),
+          items: parsed.items.slice(0, 4).map(item => ({
+            name: String(item.name || "Curiosity").trim(),
+            emoji: String(item.emoji || "🧭").trim(),
+            hint: String(item.hint || "Found while exploring.").trim()
+          }))
+        };
+      },
+
+      /**
+       * Combine two items using lateral word association into a real-world concept.
+       */
+      async combineElements(itemA, itemB, previousResultName = null) {
+        const systemPrompt = `You are the Lateral Alchemy engine for WanderCraft, a travel crafting game.
+Combine two items into ONE recognizable, witty real-world thing, place, phenomenon, idiom, or cultural trope.
+
+CRITICAL RULES:
+1. NEVER invent portmanteaus, compound mashups, or fake words (e.g., NEVER output "Breadlamp", "Fishclock", "Buspot", or "Fogtea").
+2. The result MUST be a real, recognizable concept that makes the player smile when they see the lateral connection.
+3. Think through a 1-sentence lateral link ("connection") BEFORE naming the item.
+4. Keep "name" concise (1 to 3 words).
+
+FEW-SHOT EXAMPLES:
+- "Tagine Pot" + "Red Telephone Box" -> {"connection": "Hot Moroccan spices meet a red British phone line.", "name": "Hotline", "emoji": "☎️", "description": "Spicy calls simmering inside a crimson booth."}
+- "Baguette" + "Candle" -> {"connection": "Eating French bread by candlelight late at night.", "name": "Midnight Snack", "emoji": "🕯️", "description": "Warm crumbs illuminated after hours."}
+- "Skyscraper" + "Cloud" -> {"connection": "A tower tall enough to pierce the sky for stargazing.", "name": "Observatory", "emoji": "🔭", "description": "Where steel towers meet the stratosphere."}
+- "Clockwork" + "Neon" -> {"connection": "Old-world precision gears fused with electric Tokyo nightlife.", "name": "Cyberpunk", "emoji": "🦾", "description": "High-tech neon glow ticking over brass gears."}
+- "Fog" + "Suspension Bridge" -> {"connection": "Mist rolling across an iconic red bay span.", "name": "Golden Gate", "emoji": "🌉", "description": "Steel cables vanishing into coastal mist."}
+
+Return ONLY valid JSON matching this exact schema:
+{
+  "connection": "1-sentence lateral link explaining the leap",
+  "name": "Real-World Concept",
+  "emoji": "✨",
+  "description": "Witty 1-line flavor text (max 12 words)"
+}`;
+
+        const avoidClause = previousResultName
+          ? `\nIMPORTANT: The player rerolled "${previousResultName}". Do NOT output "${previousResultName}" again—find a completely different lateral angle!`
+          : "";
+
+        const userPrompt = `Combine "${itemA}" + "${itemB}".${avoidClause}`;
+        const parsed = await this.callModel(systemPrompt, userPrompt, previousResultName ? 1.0 : 0.85);
+
+        if (!parsed || !parsed.name) {
+          throw new Error("Invalid crafting result format.");
+        }
+
+        return {
+          connection: String(parsed.connection || "An unexpected lateral leap.").trim(),
+          name: String(parsed.name).trim(),
+          emoji: String(parsed.emoji || "✨").trim(),
+          description: String(parsed.description || "Crafted through lateral thinking.").trim()
+        };
+      }
+    };
+
+    /**
+     * ============================================================================
+     * 4. APPLICATION CONTROLLER & UI RENDERING
+     * ============================================================================
+     */
+    const App = {
+      currentCityData: null,
+      inventory: [],
+      slotAIndex: null,
+      slotBIndex: null,
+      latestCraft: null,
+      activeGrimoireTab: "recipes",
+      isBusy: false,
+
+      async init() {
+        this.inventory = await StorageAdapter.getInventory();
+        this.bindEvents();
+        this.renderQuickHopChips();
+        this.renderSatchel();
+        this.renderBenchSlots();
+        await this.updateGrimoireBadge();
+
+        // Restore last visited city or auto-load London on first visit
+        const savedCity = await StorageAdapter.getCurrentCity();
+        if (savedCity) {
+          await this.travelTo(savedCity, { silent: true });
+        } else {
+          await this.travelTo("London", { silent: true });
+        }
+      },
+
+      bindEvents() {
+        // Travel Form
+        document.getElementById("travel-form").addEventListener("submit", async (e) => {
+          e.preventDefault();
+          const input = document.getElementById("travel-input");
+          const query = input.value.trim();
+          if (!query) return;
+          input.value = "";
+          await this.travelTo(query);
+        });
+
+        // Rescout current city
+        document.getElementById("btn-rescout").addEventListener("click", async () => {
+          if (!this.currentCityData || this.isBusy) return;
+          const prevNames = this.currentCityData.items.map(i => i.name);
+          await this.travelTo(this.currentCityData.displayName, { forceRefresh: true, prevNames });
+        });
+
+        // Crafting Bench buttons
+        document.getElementById("bench-slot-a").addEventListener("click", () => {
+          if (this.slotAIndex !== null) {
+            this.slotAIndex = null;
+            this.renderSatchel();
+            this.renderBenchSlots();
+          }
+        });
+
+        document.getElementById("bench-slot-b").addEventListener("click", () => {
+          if (this.slotBIndex !== null) {
+            this.slotBIndex = null;
+            this.renderSatchel();
+            this.renderBenchSlots();
+          }
+        });
+
+        document.getElementById("btn-clear-slots").addEventListener("click", () => {
+          this.slotAIndex = null;
+          this.slotBIndex = null;
+          this.renderSatchel();
+          this.renderBenchSlots();
+        });
+
+        document.getElementById("btn-combine").addEventListener("click", async () => {
+          await this.handleCombine(false);
+        });
+
+        // Grimoire Modal controls
+        document.getElementById("btn-open-grimoire").addEventListener("click", () => this.openGrimoire());
+        document.getElementById("btn-close-grimoire").addEventListener("click", () => this.closeGrimoire());
+        document.getElementById("grimoire-modal").addEventListener("click", (e) => {
+          if (e.target.id === "grimoire-modal") this.closeGrimoire();
+        });
+
+        document.getElementById("tab-grimoire-recipes").addEventListener("click", () => {
+          this.activeGrimoireTab = "recipes";
+          this.renderGrimoire();
+        });
+
+        document.getElementById("tab-grimoire-locations").addEventListener("click", () => {
+          this.activeGrimoireTab = "locations";
+          this.renderGrimoire();
+        });
+
+        // Reset Confirmation Modal controls
+        document.getElementById("btn-open-reset").addEventListener("click", () => {
+          document.getElementById("reset-modal").classList.remove("hidden");
+        });
+        document.getElementById("btn-cancel-reset").addEventListener("click", () => {
+          document.getElementById("reset-modal").classList.add("hidden");
+        });
+        document.getElementById("btn-confirm-reset").addEventListener("click", async () => {
+          await StorageAdapter.clearAll();
+          this.inventory = [];
+          this.slotAIndex = null;
+          this.slotBIndex = null;
+          this.latestCraft = null;
+          this.currentCityData = null;
+          document.getElementById("craft-result-container").classList.add("hidden");
+          document.getElementById("reset-modal").classList.add("hidden");
+          this.renderSatchel();
+          this.renderBenchSlots();
+          await this.updateGrimoireBadge();
+          this.showToast("All explorer data cleared.", "info");
+          await this.travelTo("London", { silent: true });
+        });
+      },
+
+      /**
+       * Render Quick-Hop Destination Chips with active state highlight
+       */
+      renderQuickHopChips() {
+        const container = document.getElementById("quick-hop-chips");
+        const activeKey = this.currentCityData
+          ? StorageAdapter.normalizeCityKey(this.currentCityData.displayName)
+          : "";
+
+        container.innerHTML = QUICK_HOP_CITIES.map(city => {
+          const isActive = StorageAdapter.normalizeCityKey(city.name) === activeKey;
+          return `
+            <button type="button"
+              data-city="${this.escapeHTML(city.name)}"
+              class="quick-hop-btn px-3 py-1.5 rounded-xl text-xs font-semibold border transition flex items-center gap-1.5 cursor-pointer ${
+                isActive
+                  ? "bg-terracotta-500 text-white border-terracotta-600 shadow-xs"
+                  : "bg-linen-100 hover:bg-linen-200 text-espresso-900 border-linen-300"
+              }">
+              <span>${city.emoji}</span>
+              <span>${this.escapeHTML(city.name)}</span>
+            </button>
+          `;
+        }).join("");
+
+        container.querySelectorAll(".quick-hop-btn").forEach(btn => {
+          btn.addEventListener("click", () => {
+            this.travelTo(btn.dataset.city);
+          });
+        });
+      },
+
+      /**
+       * Travel to any town/city: check localStorage cache first unless forceRefresh is true
+       */
+      async travelTo(cityName, options = {}) {
+        const { forceRefresh = false, prevNames = [], silent = false } = options;
+        if (this.isBusy) return;
+        this.isBusy = true;
+
+        const headingEl = document.getElementById("current-city-heading");
+        const statusPill = document.getElementById("location-status-pill");
+        const rescoutBtn = document.getElementById("btn-rescout");
+        const panelBody = document.getElementById("scavenge-panel-body");
+        const submitBtn = document.getElementById("btn-travel-submit");
+
+        submitBtn.disabled = true;
+        rescoutBtn.classList.add("hidden");
+        statusPill.classList.add("hidden");
+        headingEl.textContent = cityName;
+
+        try {
+          if (!forceRefresh) {
+            const cached = await StorageAdapter.getLocation(cityName);
+            if (cached) {
+              this.currentCityData = cached;
+              await StorageAdapter.setCurrentCity(cached.displayName);
+              headingEl.textContent = cached.displayName;
+              statusPill.textContent = "⚡ Cached";
+              statusPill.className = "text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200";
+              statusPill.classList.remove("hidden");
+              rescoutBtn.classList.remove("hidden");
+              this.renderQuickHopChips();
+              this.renderScavengedItems();
+              if (!silent) this.showToast(`Arrived in ${cached.displayName} (Cached)`, "success");
+              return;
+            }
+          }
+
+          // Loading state during Groq call
+          panelBody.innerHTML = `
+            <div class="py-12 flex flex-col items-center justify-center text-center gap-3">
+              <div class="spinner"></div>
+              <div>
+                <p class="font-semibold text-sm text-espresso-900">Scouting ${this.escapeHTML(cityName)}...</p>
+                <p class="text-xs text-espresso-700 mt-0.5">Asking Groq for iconic local elements</p>
+              </div>
+            </div>
+          `;
+
+          const generated = await AIService.generateLocationElements(cityName, prevNames);
+          await StorageAdapter.saveLocation(cityName, generated);
+          if (generated.displayName.toLowerCase() !== cityName.toLowerCase()) {
+            await StorageAdapter.saveLocation(generated.displayName, generated);
+          }
+
+          this.currentCityData = generated;
+          headingEl.textContent = generated.displayName;
+          statusPill.textContent = "✨ Newly Scouted";
+          statusPill.className = "text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-200";
+          statusPill.classList.remove("hidden");
+          rescoutBtn.classList.remove("hidden");
+
+          this.renderQuickHopChips();
+          this.renderScavengedItems();
+          if (!silent) this.showToast(`Scouted ${generated.displayName}!`, "success");
+        } catch (err) {
+          console.error(err);
+          panelBody.innerHTML = `
+            <div class="py-10 px-4 text-center">
+              <p class="text-2xl mb-2">⚠️</p>
+              <p class="font-semibold text-sm text-red-700">Could not scout ${this.escapeHTML(cityName)}</p>
+              <p class="text-xs text-espresso-700 mt-1">${this.escapeHTML(err.message)}</p>
+            </div>
+          `;
+          this.showToast(`Travel error: ${err.message}`, "error");
+        } finally {
+          this.isBusy = false;
+          submitBtn.disabled = false;
+        }
+      },
+
+      /**
+       * Render the 4 local items for the active destination
+       */
+      renderScavengedItems() {
+        const panelBody = document.getElementById("scavenge-panel-body");
+        if (!this.currentCityData || !this.currentCityData.items.length) return;
+
+        const packedNames = new Set(this.inventory.map(i => i.name.toLowerCase()));
+
+        panelBody.innerHTML = `
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 animate-entry">
+            ${this.currentCityData.items.map((item, idx) => {
+              const isPacked = packedNames.has(item.name.toLowerCase());
+              return `
+                <div class="p-4 rounded-xl bg-white border border-linen-300 flex flex-col justify-between gap-3 shadow-2xs hover:border-terracotta-500/60 transition">
+                  <div class="flex items-start gap-3">
+                    <div class="w-11 h-11 rounded-xl bg-linen-100 border border-linen-200 flex items-center justify-center text-2xl shrink-0">
+                      ${this.escapeHTML(item.emoji)}
+                    </div>
+                    <div class="min-w-0">
+                      <h4 class="font-bold text-sm text-espresso-900 truncate">${this.escapeHTML(item.name)}</h4>
+                      <p class="text-xs text-espresso-700 mt-0.5 leading-snug">${this.escapeHTML(item.hint)}</p>
+                    </div>
+                  </div>
+                  <button type="button"
+                    data-item-idx="${idx}"
+                    ${isPacked ? "disabled" : ""}
+                    class="pack-local-btn w-full py-2 px-3 rounded-xl text-xs font-semibold transition flex items-center justify-center gap-1.5 ${
+                      isPacked
+                        ? "bg-linen-100 text-espresso-700/60 border border-linen-200 cursor-default"
+                        : "bg-espresso-900 hover:bg-terracotta-500 text-linen-50 cursor-pointer"
+                    }">
+                    ${isPacked ? "✓ In Satchel" : "+ Pack into Satchel"}
+                  </button>
+                </div>
+              `;
+            }).join("")}
+          </div>
+        `;
+
+        panelBody.querySelectorAll(".pack-local-btn").forEach(btn => {
+          btn.addEventListener("click", async () => {
+            const item = this.currentCityData.items[Number(btn.dataset.itemIdx)];
+            if (!item) return;
+            await this.addToSatchel({
+              name: item.name,
+              emoji: item.emoji,
+              origin: this.currentCityData.displayName
+            });
+          });
+        });
+      },
+
+      /**
+       * Add an item to the 8-slot satchel
+       */
+      async addToSatchel(newItem) {
+        if (this.inventory.some(i => i.name.toLowerCase() === newItem.name.toLowerCase())) {
+          this.showToast(`"${newItem.name}" is already in your satchel.`, "info");
+          return;
+        }
+        if (this.inventory.length >= MAX_SATCHEL_SIZE) {
+          this.showToast("Satchel full (8/8)! Remove an item with × to make space.", "error");
+          return;
+        }
+
+        this.inventory.push(newItem);
+        await StorageAdapter.saveInventory(this.inventory);
+        this.renderSatchel();
+        this.renderScavengedItems();
+        this.showToast(`Packed ${newItem.emoji} ${newItem.name}`, "success");
+      },
+
+      /**
+       * Remove an item from the satchel by index
+       */
+      async removeFromSatchel(index) {
+        if (index < 0 || index >= this.inventory.length) return;
+        const removed = this.inventory[index];
+
+        // Adjust selected bench slot indices
+        if (this.slotAIndex === index) this.slotAIndex = null;
+        else if (this.slotAIndex !== null && this.slotAIndex > index) this.slotAIndex--;
+
+        if (this.slotBIndex === index) this.slotBIndex = null;
+        else if (this.slotBIndex !== null && this.slotBIndex > index) this.slotBIndex--;
+
+        this.inventory.splice(index, 1);
+        await StorageAdapter.saveInventory(this.inventory);
+        this.renderSatchel();
+        this.renderBenchSlots();
+        this.renderScavengedItems();
+        this.showToast(`Removed ${removed.name} from satchel.`, "info");
+      },
+
+      /**
+       * Toggle an inventory item onto Slot A or Slot B
+       */
+      toggleSatchelItemOnBench(index) {
+        if (this.slotAIndex === index) {
+          this.slotAIndex = null;
+        } else if (this.slotBIndex === index) {
+          this.slotBIndex = null;
+        } else if (this.slotAIndex === null) {
+          this.slotAIndex = index;
+        } else if (this.slotBIndex === null) {
+          this.slotBIndex = index;
+        } else {
+          // Replace Slot B if both are already filled
+          this.slotBIndex = index;
+        }
+        this.renderSatchel();
+        this.renderBenchSlots();
+      },
+
+      /**
+       * Render all 8 satchel slots
+       */
+      renderSatchel() {
+        const grid = document.getElementById("satchel-slots-grid");
+        const badge = document.getElementById("satchel-capacity-badge");
+        badge.textContent = `${this.inventory.length} / ${MAX_SATCHEL_SIZE}`;
+
+        let html = "";
+        for (let i = 0; i < MAX_SATCHEL_SIZE; i++) {
+          const item = this.inventory[i];
+          if (item) {
+            const isSlotA = this.slotAIndex === i;
+            const isSlotB = this.slotBIndex === i;
+            const selectedBadge = isSlotA
+              ? `<span class="text-[10px] font-bold px-1.5 py-0.2 rounded bg-terracotta-500 text-white">Slot A</span>`
+              : isSlotB
+              ? `<span class="text-[10px] font-bold px-1.5 py-0.2 rounded bg-amber-600 text-white">Slot B</span>`
+              : "";
+
+            html += `
+              <div data-satchel-idx="${i}"
+                class="satchel-card relative p-2.5 rounded-xl border transition cursor-pointer select-none flex items-center gap-2.5 ${
+                  isSlotA || isSlotB
+                    ? "bg-amber-50 border-terracotta-500 ring-1 ring-terracotta-500"
+                    : "bg-white border-linen-300 hover:border-espresso-700"
+                }">
+                <span class="text-xl shrink-0">${this.escapeHTML(item.emoji)}</span>
+                <div class="min-w-0 flex-1 pr-4">
+                  <div class="font-bold text-xs text-espresso-900 truncate">${this.escapeHTML(item.name)}</div>
+                  <div class="flex items-center gap-1.5 mt-0.5">
+                    <span class="text-[10px] text-espresso-700 truncate">${this.escapeHTML(item.origin || "Crafted")}</span>
+                    ${selectedBadge}
+                  </div>
+                </div>
+                <button type="button"
+                  data-remove-idx="${i}"
+                  class="remove-satchel-btn absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-linen-100 hover:bg-red-100 text-espresso-700 hover:text-red-700 text-xs font-bold flex items-center justify-center cursor-pointer"
+                  title="Discard item">
+                  ×
+                </button>
+              </div>
+            `;
+          } else {
+            html += `
+              <div class="p-2.5 rounded-xl border border-dashed border-linen-300 bg-linen-100/60 flex items-center justify-center h-[58px]">
+                <span class="text-[11px] text-espresso-700/45 font-medium">Empty Slot</span>
+              </div>
+            `;
+          }
+        }
+
+        grid.innerHTML = html;
+
+        grid.querySelectorAll(".satchel-card").forEach(card => {
+          card.addEventListener("click", (e) => {
+            if (e.target.closest(".remove-satchel-btn")) return;
+            this.toggleSatchelItemOnBench(Number(card.dataset.satchelIdx));
+          });
+        });
+
+        grid.querySelectorAll(".remove-satchel-btn").forEach(btn => {
+          btn.addEventListener("click", async (e) => {
+            e.stopPropagation();
+            await this.removeFromSatchel(Number(btn.dataset.removeIdx));
+          });
+        });
+      },
+
+      /**
+       * Render Slot A & Slot B on the Lateral Crafting Bench
+       */
+      renderBenchSlots() {
+        const slotAEl = document.getElementById("bench-slot-a");
+        const slotBEl = document.getElementById("bench-slot-b");
+        const combineBtn = document.getElementById("btn-combine");
+
+        const itemA = this.slotAIndex !== null ? this.inventory[this.slotAIndex] : null;
+        const itemB = this.slotBIndex !== null ? this.inventory[this.slotBIndex] : null;
+
+        if (itemA) {
+          slotAEl.className = "col-span-5 h-24 rounded-xl border-2 border-terracotta-500 bg-espresso-800 hover:bg-espresso-700 transition flex flex-col items-center justify-center p-2 text-center cursor-pointer";
+          slotAEl.innerHTML = `
+            <span class="text-2xl">${this.escapeHTML(itemA.emoji)}</span>
+            <span class="font-bold text-xs text-linen-50 mt-1 line-clamp-1">${this.escapeHTML(itemA.name)}</span>
+            <span class="text-[10px] text-amber-300/80">Tap to clear</span>
+          `;
+        } else {
+          slotAEl.className = "col-span-5 h-24 rounded-xl border-2 border-dashed border-espresso-700 bg-espresso-800/70 hover:border-amber-500 transition flex flex-col items-center justify-center p-2 text-center cursor-pointer";
+          slotAEl.innerHTML = `
+            <span class="text-xs font-semibold text-linen-300">Slot A</span>
+            <span class="text-[11px] text-linen-300/60 mt-0.5">Tap satchel item</span>
+          `;
+        }
+
+        if (itemB) {
+          slotBEl.className = "col-span-5 h-24 rounded-xl border-2 border-amber-500 bg-espresso-800 hover:bg-espresso-700 transition flex flex-col items-center justify-center p-2 text-center cursor-pointer";
+          slotBEl.innerHTML = `
+            <span class="text-2xl">${this.escapeHTML(itemB.emoji)}</span>
+            <span class="font-bold text-xs text-linen-50 mt-1 line-clamp-1">${this.escapeHTML(itemB.name)}</span>
+            <span class="text-[10px] text-amber-300/80">Tap to clear</span>
+          `;
+        } else {
+          slotBEl.className = "col-span-5 h-24 rounded-xl border-2 border-dashed border-espresso-700 bg-espresso-800/70 hover:border-amber-500 transition flex flex-col items-center justify-center p-2 text-center cursor-pointer";
+          slotBEl.innerHTML = `
+            <span class="text-xs font-semibold text-linen-300">Slot B</span>
+            <span class="text-[11px] text-linen-300/60 mt-0.5">Tap satchel item</span>
+          `;
+        }
+
+        combineBtn.disabled = !(itemA && itemB);
+      },
+
+      /**
+       * Combine Slot A + Slot B (or reroll an existing pair)
+       */
+      async handleCombine(forceReroll = false, overridePair = null) {
+        if (this.isBusy) return;
+
+        let nameA, nameB, prevName = null;
+        if (overridePair) {
+          nameA = overridePair.a;
+          nameB = overridePair.b;
+          prevName = overridePair.prevName || null;
+        } else {
+          const itemA = this.slotAIndex !== null ? this.inventory[this.slotAIndex] : null;
+          const itemB = this.slotBIndex !== null ? this.inventory[this.slotBIndex] : null;
+          if (!itemA || !itemB) return;
+          nameA = itemA.name;
+          nameB = itemB.name;
+          if (forceReroll && this.latestCraft) {
+            prevName = this.latestCraft.name;
+          }
+        }
+
+        this.isBusy = true;
+        const combineBtn = document.getElementById("btn-combine");
+        const resultContainer = document.getElementById("craft-result-container");
+        const originalBtnHTML = combineBtn.innerHTML;
+
+        combineBtn.disabled = true;
+        combineBtn.innerHTML = `<div class="spinner-light"></div><span>Thinking laterally...</span>`;
+
+        try {
+          let recipe = null;
+          let fromCache = false;
+
+          if (!forceReroll) {
+            recipe = await StorageAdapter.getRecipe(nameA, nameB);
+            if (recipe) fromCache = true;
+          }
+
+          if (!recipe) {
+            const generated = await AIService.combineElements(nameA, nameB, prevName);
+            recipe = await StorageAdapter.saveRecipe(nameA, nameB, generated);
+          }
+
+          this.latestCraft = recipe;
+          await this.updateGrimoireBadge();
+          this.renderCraftResult(recipe, nameA, nameB, fromCache);
+
+          if (!this.grimoireIsHidden()) {
+            await this.renderGrimoire();
+          }
+
+          this.showToast(
+            forceReroll
+              ? `Rerolled into ${recipe.emoji} ${recipe.name}!`
+              : fromCache
+              ? `Recalled ${recipe.emoji} ${recipe.name} from Grimoire`
+              : `Discovered ${recipe.emoji} ${recipe.name}!`,
+            "success"
+          );
+        } catch (err) {
+          console.error(err);
+          resultContainer.classList.remove("hidden");
+          resultContainer.innerHTML = `
+            <div class="p-3.5 rounded-xl bg-red-950/70 border border-red-800 text-xs text-red-200">
+              <strong>Alchemy failed:</strong> ${this.escapeHTML(err.message)}
+            </div>
+          `;
+          this.showToast(`Crafting error: ${err.message}`, "error");
+        } finally {
+          this.isBusy = false;
+          combineBtn.innerHTML = originalBtnHTML;
+          this.renderBenchSlots();
+        }
+      },
+
+      /**
+       * Render the crafted discovery card with Lateral Spark, Pack button, and Reroll button
+       */
+      renderCraftResult(recipe, nameA, nameB, fromCache) {
+        const container = document.getElementById("craft-result-container");
+        const alreadyInSatchel = this.inventory.some(
+          i => i.name.toLowerCase() === recipe.name.toLowerCase()
+        );
+
+        container.classList.remove("hidden");
+        container.innerHTML = `
+          <div class="p-4 rounded-xl bg-espresso-800 border border-amber-500/40 space-y-3">
+            <div class="flex items-start justify-between gap-2">
+              <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-xl bg-espresso-900 border border-espresso-700 flex items-center justify-center text-3xl shrink-0">
+                  ${this.escapeHTML(recipe.emoji)}
+                </div>
+                <div>
+                  <div class="flex items-center gap-2 flex-wrap">
+                    <h3 class="font-serif text-lg font-bold text-amber-200 leading-tight">
+                      ${this.escapeHTML(recipe.name)}
+                    </h3>
+                    <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full ${
+                      fromCache
+                        ? "bg-emerald-950 text-emerald-300 border border-emerald-700/60"
+                        : "bg-terracotta-500/30 text-amber-200 border border-terracotta-500/50"
+                    }">
+                      ${fromCache ? "⚡ Known Recipe" : "✨ New Discovery"}
+                    </span>
+                  </div>
+                  <p class="text-xs text-linen-100 mt-1">${this.escapeHTML(recipe.description)}</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Lateral Spark reasoning -->
+            <div class="px-3 py-2 rounded-lg bg-espresso-900/80 border border-espresso-700/80 text-[11px] text-linen-300 italic">
+              💡 <span class="font-semibold not-italic text-amber-300/90">Lateral Spark:</span>
+              ${this.escapeHTML(recipe.connection)}
+            </div>
+
+            <!-- Action Controls: Pack to Satchel + Reroll Recipe -->
+            <div class="flex flex-wrap items-center gap-2 pt-1">
+              <button id="btn-pack-crafted" type="button"
+                ${alreadyInSatchel ? "disabled" : ""}
+                class="flex-1 py-2 px-3 rounded-xl text-xs font-semibold transition flex items-center justify-center gap-1.5 ${
+                  alreadyInSatchel
+                    ? "bg-espresso-900 text-linen-300/50 border border-espresso-700 cursor-default"
+                    : "bg-amber-600 hover:bg-amber-500 text-white cursor-pointer"
+                }">
+                ${alreadyInSatchel ? "✓ In Satchel" : "🎒 Pack to Satchel"}
+              </button>
+
+              <button id="btn-reroll-crafted" type="button"
+                class="py-2 px-3 rounded-xl bg-espresso-900 hover:bg-espresso-700 text-linen-100 border border-espresso-700 text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer"
+                title="Generate a fresh lateral result and overwrite this recipe">
+                <span>↻</span>
+                <span>Reroll Recipe</span>
+              </button>
+            </div>
+          </div>
+        `;
+
+        const packBtn = document.getElementById("btn-pack-crafted");
+        if (packBtn && !alreadyInSatchel) {
+          packBtn.addEventListener("click", async () => {
+            await this.addToSatchel({
+              name: recipe.name,
+              emoji: recipe.emoji,
+              origin: `${nameA} + ${nameB}`
+            });
+            this.renderCraftResult(recipe, nameA, nameB, fromCache);
+          });
+        }
+
+        const rerollBtn = document.getElementById("btn-reroll-crafted");
+        if (rerollBtn) {
+          rerollBtn.addEventListener("click", async () => {
+            await this.handleCombine(true, {
+              a: nameA,
+              b: nameB,
+              prevName: recipe.name
+            });
+          });
+        }
+      },
+
+      /**
+       * Grimoire Modal Management
+       */
+      grimoireIsHidden() {
+        return document.getElementById("grimoire-modal").classList.contains("hidden");
+      },
+
+      async openGrimoire() {
+        document.getElementById("grimoire-modal").classList.remove("hidden");
+        await this.renderGrimoire();
+      },
+
+      closeGrimoire() {
+        document.getElementById("grimoire-modal").classList.add("hidden");
+      },
+
+      async updateGrimoireBadge() {
+        const recipes = await StorageAdapter.getAllRecipes();
+        document.getElementById("grimoire-recipe-count").textContent = recipes.length;
+      },
+
+      async renderGrimoire() {
+        const contentEl = document.getElementById("grimoire-content");
+        const tabRecipes = document.getElementById("tab-grimoire-recipes");
+        const tabLocations = document.getElementById("tab-grimoire-locations");
+
+        if (this.activeGrimoireTab === "recipes") {
+          tabRecipes.className = "pb-2.5 text-sm font-bold border-b-2 border-terracotta-500 text-terracotta-600 cursor-pointer";
+          tabLocations.className = "pb-2.5 text-sm font-medium border-b-2 border-transparent text-espresso-700 hover:text-espresso-900 cursor-pointer";
+
+          const recipes = await StorageAdapter.getAllRecipes();
+          if (!recipes.length) {
+            contentEl.innerHTML = `
+              <div class="text-center py-12 text-espresso-700">
+                <p class="text-3xl mb-2">⚗️</p>
+                <p class="font-semibold text-sm text-espresso-900">No recipes discovered yet</p>
+                <p class="text-xs mt-1">Pack two items into your satchel and combine them on the Lateral Crafting Bench.</p>
+              </div>
+            `;
+            return;
+          }
+
+          contentEl.innerHTML = recipes.map(r => `
+            <div class="p-4 rounded-xl bg-white border border-linen-300 flex items-start justify-between gap-3">
+              <div class="flex items-start gap-3 min-w-0">
+                <div class="w-11 h-11 rounded-xl bg-linen-100 border border-linen-200 flex items-center justify-center text-2xl shrink-0">
+                  ${this.escapeHTML(r.emoji)}
+                </div>
+                <div class="min-w-0">
+                  <div class="text-xs font-medium text-espresso-700">
+                    ${this.escapeHTML(r.ingredients[0])} <span class="text-terracotta-600 font-bold">+</span> ${this.escapeHTML(r.ingredients[1])}
+                  </div>
+                  <div class="font-serif font-bold text-base text-espresso-900">${this.escapeHTML(r.name)}</div>
+                  <div class="text-xs text-espresso-800 mt-0.5">${this.escapeHTML(r.description)}</div>
+                  <div class="text-[11px] text-espresso-700 italic mt-1">
+                    💡 ${this.escapeHTML(r.connection)}
+                  </div>
+                </div>
+              </div>
+              <button type="button"
+                data-a="${this.escapeHTML(r.ingredients[0])}"
+                data-b="${this.escapeHTML(r.ingredients[1])}"
+                data-prev="${this.escapeHTML(r.name)}"
+                class="grimoire-reroll-btn shrink-0 px-2.5 py-1.5 rounded-xl bg-linen-100 hover:bg-terracotta-500 hover:text-white border border-linen-300 text-xs font-semibold text-espresso-900 transition cursor-pointer"
+                title="Reroll this recipe">
+                ↻ Reroll
+              </button>
+            </div>
+          `).join("");
+
+          contentEl.querySelectorAll(".grimoire-reroll-btn").forEach(btn => {
+            btn.addEventListener("click", async () => {
+              btn.disabled = true;
+              btn.textContent = "…";
+              await this.handleCombine(true, {
+                a: btn.dataset.a,
+                b: btn.dataset.b,
+                prevName: btn.dataset.prev
+              });
+            });
+          });
+        } else {
+          tabLocations.className = "pb-2.5 text-sm font-bold border-b-2 border-terracotta-500 text-terracotta-600 cursor-pointer";
+          tabRecipes.className = "pb-2.5 text-sm font-medium border-b-2 border-transparent text-espresso-700 hover:text-espresso-900 cursor-pointer";
+
+          const locations = await StorageAdapter.getAllLocations();
+          // Deduplicate by displayName
+          const uniqueMap = new Map();
+          locations.forEach(loc => uniqueMap.set(loc.displayName, loc));
+          const uniqueLocations = Array.from(uniqueMap.values());
+
+          if (!uniqueLocations.length) {
+            contentEl.innerHTML = `
+              <div class="text-center py-12 text-espresso-700">
+                <p class="text-3xl mb-2">🗺️</p>
+                <p class="font-semibold text-sm text-espresso-900">No destinations charted yet</p>
+              </div>
+            `;
+            return;
+          }
+
+          contentEl.innerHTML = uniqueLocations.map(loc => `
+            <div class="p-4 rounded-xl bg-white border border-linen-300 flex flex-col gap-2.5">
+              <div class="flex items-center justify-between gap-2">
+                <h4 class="font-serif font-bold text-base text-espresso-900">📍 ${this.escapeHTML(loc.displayName)}</h4>
+                <button type="button"
+                  data-revisit="${this.escapeHTML(loc.displayName)}"
+                  class="grimoire-revisit-btn px-3 py-1 rounded-xl bg-linen-100 hover:bg-terracotta-500 hover:text-white border border-linen-300 text-xs font-semibold text-espresso-900 transition cursor-pointer">
+                  Revisit →
+                </button>
+              </div>
+              <div class="flex flex-wrap gap-1.5">
+                ${loc.items.map(it => `
+                  <span class="px-2.5 py-1 rounded-lg bg-linen-100 border border-linen-200 text-xs font-medium text-espresso-900">
+                    ${this.escapeHTML(it.emoji)} ${this.escapeHTML(it.name)}
+                  </span>
+                `).join("")}
+              </div>
+            </div>
+          `).join("");
+
+          contentEl.querySelectorAll(".grimoire-revisit-btn").forEach(btn => {
+            btn.addEventListener("click", async () => {
+              this.closeGrimoire();
+              await this.travelTo(btn.dataset.revisit);
+            });
+          });
+        }
+      },
+
+      /**
+       * Non-blocking Toast Banner
+       */
+      showToast(message, type = "info") {
+        const container = document.getElementById("toast-container");
+        const toast = document.createElement("div");
+
+        const styles = {
+          success: "bg-espresso-900 text-linen-50 border-emerald-500/60",
+          error: "bg-red-950 text-red-100 border-red-500/60",
+          info: "bg-espresso-900 text-linen-50 border-amber-500/60"
+        };
+
+        toast.className = `pointer-events-auto px-4 py-2.5 rounded-xl border shadow-lg text-xs font-medium animate-entry ${styles[type] || styles.info}`;
+        toast.textContent = message;
+        container.appendChild(toast);
+
+        setTimeout(() => {
+          toast.style.opacity = "0";
+          toast.style.transition = "opacity 0.25s ease";
+          setTimeout(() => toast.remove(), 260);
+        }, 2800);
+      },
+
+      escapeHTML(str) {
+        return String(str ?? "")
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#39;");
+      }
+    };
+
+    window.addEventListener("DOMContentLoaded", () => {
+      App.init();
+    });
+  </script>
+</body>
+</html>

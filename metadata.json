@@ -1,0 +1,8 @@
+{
+  "name": "WanderCraft",
+  "description": "Travel between world cities, trade limited local goods across a supply-and-demand network, and combine ingredients into locked-in generative discoveries.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
